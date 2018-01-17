@@ -5,12 +5,13 @@ import queue
 import time
 import logging
 import paho.mqtt.publish as publish
-import datetimev
-import numpy as np
+import datetime
+import matplotlib
+matplotlib.use('Pdf')
 import matplotlib.pyplot as plt
-from logging.handlers import  RotatingFileHandler
+from logging.handlers import RotatingFileHandler
 
-hostname = "192.168.1.92"
+hostname = "192.168.1.66"
 
 DEBUG = False
 logFile = 'mqtt_telegram.log'
@@ -84,16 +85,13 @@ class telegram_thread(threading.Thread):
                     fig.tight_layout()
                     plt.savefig('temp.png')
                     self.bot.send_photo(chat_id=self.chat_id, photo=open('temp.png','rb'))
-
-
-
             queueLock.acquire()
             if not queue_to_telegram.empty():
                 # a new message is available on the queue
                 msg = queue_to_telegram.get()
                 queueLock.release()
-                #output = "Received data {} from {}".format(msg.payload.decode('utf-8'), msg.topic)
-                #print(output)
+                # output = "Received data {} from {}".format(msg.payload.decode('utf-8'), msg.topic)
+                # print(output)
                 try:
                     val = msg.payload.decode('utf-8')
                     numeric_val = float(val)
@@ -258,6 +256,7 @@ class TelegramBarsanti:
 def main():
     token = '530995039:AAH7PjTEcj1TqAvlv9l0SnabGHDWkBse_pU'
     token = '536915810:AAEL3tVvT2l7NDizIb6F0iDOdRAyRjLVXfY'
+    token = '530485863:AAFx_9isCpFYndgkAWRBGP_kU0JtzJ9Emmk'
 
     to_mqtt_Queue = queue.Queue(10)
     mqtt_thr = mqtt_thread(to_mqtt_Queue, queue_to_telegram)
