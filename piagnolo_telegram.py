@@ -267,15 +267,27 @@ class TelegramBarsanti:
         self.updater.start_polling()
         self.updater.idle()
 
+def getopts(argv):
+    opts = {}  # Empty dictionary to store key-value pairs.
+    while argv:  # While there are arguments left to parse...
+        if argv[0][0] == '-':  # Found a "-name value" pair.
+            opts[argv[0]] = argv[1]  # Add key and value to the dictionary.
+        argv = argv[1:]  # Reduce the argument list by copying it starting from index 1.
+    return opts
 
 def main():
-
-
-    to_mqtt_Queue = queue.Queue(10)
-    mqtt_thr = mqtt_thread(to_mqtt_Queue, queue_to_telegram)
-    mqtt_thr.start()
-    myTgBar = TelegramBarsanti(token, queue_to_telegram)
-    myTgBar.run()
+    from sys import argv
+    myargs = getopts(argv)
+    if '-t' in myargs:  # Example usage.
+        print(myargs['-t'])
+        token = myargs['-t']
+        to_mqtt_Queue = queue.Queue(10)
+        mqtt_thr = mqtt_thread(to_mqtt_Queue, queue_to_telegram)
+        mqtt_thr.start()
+        myTgBar = TelegramBarsanti(token, queue_to_telegram)
+        myTgBar.run()
+    else:
+        print('Wrong args')
 
 
 if __name__ == '__main__':
