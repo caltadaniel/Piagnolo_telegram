@@ -20,7 +20,7 @@ DEBUG = False
 logFile = 'mqtt_telegram.log'
 log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
-log_handler = RotatingFileHandler(logFile, mode='a', maxBytes=5*1024*1024, backupCount=2, encoding=None, delay=0)
+log_handler = RotatingFileHandler(logFile, mode='a', maxBytes=1*1024*1024, backupCount=2, encoding=None, delay=0)
 log_handler.setFormatter(log_formatter)
 log_handler.setLevel(logging.DEBUG)
 
@@ -70,73 +70,79 @@ class telegram_thread(threading.Thread):
 
     def run(self):
         while True:
-            requestLock.acquire()
-            if not request_queue.empty():
-                #there is a new request from the user
-                next_req = request_queue.get()
-                requestLock.release()
-            else:
-                next_req = None
-                requestLock.release()
+            try:
+                requestLock.acquire()
+                if not request_queue.empty():
+                    # there is a new request from the user
+                    next_req = request_queue.get()
+                    requestLock.release()
+                else:
+                    next_req = None
+                    requestLock.release()
 
-            #handle the next req
-            if next_req is not None:
-                # if the bot is not defined, use this message to instantiate it
-                if self.bot is None:
-                    self.bot = next_req.bot
-                if next_req.name == "/home/sala/temperature":
-                    self.bot.send_message(chat_id=next_req.chat_id, text=r'Temperatura sala: {}, umidita sala: {}'.format(self.last_temperature_sala, self.last_humidity_sala))
-                    prog_log.debug('Replying to temperature request to {}'.format(next_req.chat_id))
-                if next_req.name == "home/sala/rele1":
-                    publish.single("home/sala/rele1", next_req.args[0], hostname=hostname, port=1883)
-                if next_req.name == "home/sala/grafico":
-                    fig,ax1 = plt.subplots()
-                    ax1.plot(self.temp_time, self.temp, 'b-o')
-                    ax1.set_xlabel('time (s)')
-                    # Make the y-axis label, ticks and tick labels match the line color.
-                    ax1.set_ylabel('Temperatura', color='b')
-                    ax1.tick_params('y', colors='b')
+                # handle the next req
+                if next_req is not None:
+                    # if the bot is not defined, use this message to instantiate it
+                    if self.bot is None:
+                        self.bot = next_req.bot
+                    if next_req.name == "/home/sala/temperature":
+                        self.bot.send_message(chat_id=next_req.chat_id,
+                                              text=r'Temperatura sala: {}, umidita sala: {}'.format(
+                                                  self.last_temperature_sala, self.last_humidity_sala))
+                        prog_log.debug('Replying to temperature request to {}'.format(next_req.chat_id))
+                    if next_req.name == "home/sala/rele1":
+                        publish.single("home/sala/rele1", next_req.args[0], hostname=hostname, port=1883)
+                    if next_req.name == "home/sala/grafico":
+                        fig, ax1 = plt.subplots()
+                        ax1.plot(self.temp_time, self.temp, 'b-o')
+                        ax1.set_xlabel('time (s)')
+                        # Make the y-axis label, ticks and tick labels match the line color.
+                        ax1.set_ylabel('Temperatura', color='b')
+                        ax1.tick_params('y', colors='b')
 
-                    ax2 = ax1.twinx()
-                    ax2.plot(self.hum_time, self.hum, 'r-o')
-                    ax2.set_ylabel('Umidita', color='r')
-                    ax2.tick_params('y', colors='r')
+                        ax2 = ax1.twinx()
+                        ax2.plot(self.hum_time, self.hum, 'r-o')
+                        ax2.set_ylabel('Umidita', color='r')
+                        ax2.tick_params('y', colors='r')
 
-                    fig.tight_layout()
-                    fig.autofmt_xdate()
-                    plt.savefig('temp.png')
-                    self.bot.send_photo(chat_id=next_req.chat_id, photo=open('temp.png','rb'))
-                    prog_log.debug('Replying to plot request to {}'.format(next_req.chat_id))
-            queueLock.acquire()
-            if not queue_to_telegram.empty():
-                # a new message is available on the queue
-                msg = queue_to_telegram.get()
-                queueLock.release()
-                # output = "Received data {} from {}".format(msg.payload.decode('utf-8'), msg.topic)
-                # print(output)
-                try:
-                    val = msg.payload.decode('utf-8')
-                    numeric_val = float(val)
-                    if msg.topic == 'home/sala/temperature':
-                        self.last_temperature_sala = numeric_val
-                        self.temp.append(numeric_val)
-                        self.temp_time.append(datetime.datetime.now())
-                        if len(self.temp) >= self.max_buffer_size:
-                            self.temp = self.temp[-self.max_buffer_size:]
-                            self.temp_time = self.temp_time[-self.max_buffer_size:]
-                    elif msg.topic == 'home/sala/humidity':
-                        self.last_humidity_sala = numeric_val
-                        self.hum.append(numeric_val)
-                        self.hum_time.append(datetime.datetime.now())
-                        if len(self.hum) >= self.max_buffer_size:
-                            self.hum = self.hum[-self.max_buffer_size:]
-                            self.hum_time = self.hum_time[-self.max_buffer_size:]
-                except:
-                    prog_log.critical('Unable to convert to int {}'.format(msg.payload.decode('utf-8')))
-                #self.bot.send_message(chat_id=self.chat_id, text=output)
-            else:
-                queueLock.release()
-            time.sleep(0.01)
+                        fig.tight_layout()
+                        fig.autofmt_xdate()
+                        plt.savefig('temp.png')
+                        self.bot.send_photo(chat_id=next_req.chat_id, photo=open('temp.png', 'rb'))
+                        prog_log.debug('Replying to plot request to {}'.format(next_req.chat_id))
+                queueLock.acquire()
+                if not queue_to_telegram.empty():
+                    # a new message is available on the queue
+                    msg = queue_to_telegram.get()
+                    queueLock.release()
+                    # output = "Received data {} from {}".format(msg.payload.decode('utf-8'), msg.topic)
+                    # print(output)
+                    try:
+                        val = msg.payload.decode('utf-8')
+                        numeric_val = float(val)
+                        if msg.topic == 'home/sala/temperature':
+                            self.last_temperature_sala = numeric_val
+                            self.temp.append(numeric_val)
+                            self.temp_time.append(datetime.datetime.now())
+                            if len(self.temp) >= self.max_buffer_size:
+                                self.temp = self.temp[-self.max_buffer_size:]
+                                self.temp_time = self.temp_time[-self.max_buffer_size:]
+                        elif msg.topic == 'home/sala/humidity':
+                            self.last_humidity_sala = numeric_val
+                            self.hum.append(numeric_val)
+                            self.hum_time.append(datetime.datetime.now())
+                            if len(self.hum) >= self.max_buffer_size:
+                                self.hum = self.hum[-self.max_buffer_size:]
+                                self.hum_time = self.hum_time[-self.max_buffer_size:]
+                    except:
+                        prog_log.critical('Unable to convert to int {}'.format(msg.payload.decode('utf-8')))
+                        # self.bot.send_message(chat_id=self.chat_id, text=output)
+                else:
+                    queueLock.release()
+                time.sleep(0.01)
+            except Exception as e:
+                prog_log.exception()
+
 
 
 class mqtt_thread(threading.Thread):
