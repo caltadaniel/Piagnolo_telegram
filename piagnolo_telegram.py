@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from logging.handlers import RotatingFileHandler
 
 hostname = "192.168.1.66"
+hostname = "localhost"
 
 DEBUG = False
 logFile = 'mqtt_telegram.log'
@@ -85,8 +86,8 @@ class telegram_thread(threading.Thread):
                 if next_req.name == "/home/sala/temperature":
                     self.bot.send_message(chat_id=next_req.chat_id, text=r'Temperatura sala: {}, umidita sala: {}'.format(self.last_temperature_sala, self.last_humidity_sala))
                     prog_log.debug('Replying to temperature request to {}'.format(next_req.chat_id))
-                if next_req.name == "home/sala/stufa":
-                    publish.single("home/sala/stufa", next_req.args[0], hostname=hostname, port=1883)
+                if next_req.name == "home/sala/rele1":
+                    publish.single("home/sala/rele1", next_req.args[0], hostname=hostname, port=1883)
                 if next_req.name == "home/sala/grafico":
                     fig,ax1 = plt.subplots()
                     ax1.plot(self.temp_time, self.temp, 'b-o')
@@ -101,6 +102,7 @@ class telegram_thread(threading.Thread):
                     ax2.tick_params('y', colors='r')
 
                     fig.tight_layout()
+                    fig.autofmt_xdate()
                     plt.savefig('temp.png')
                     self.bot.send_photo(chat_id=next_req.chat_id, photo=open('temp.png','rb'))
                     prog_log.debug('Replying to plot request to {}'.format(next_req.chat_id))
@@ -217,7 +219,7 @@ class TelegramBarsanti:
     def stufa_on(self, bot, update):
         prog_log.debug("Stufa ON")
         update.message.reply_text('Accensione stufa')
-        stufa_req = Request("home/sala/stufa", bot, update.message.chat.id, ["1"])
+        stufa_req = Request("home/sala/rele1", bot, update.message.chat.id, ["1"])
         requestLock.acquire()
         request_queue.put(stufa_req)
         requestLock.release()
@@ -225,7 +227,7 @@ class TelegramBarsanti:
     def stufa_off(self, bot, update):
         prog_log.debug("Stufa OFF")
         update.message.reply_text('Spegnimento stufa')
-        stufa_req = Request("home/sala/stufa", bot, update.message.chat.id, ["0"])
+        stufa_req = Request("home/sala/rele1", bot, update.message.chat.id, ["0"])
         requestLock.acquire()
         request_queue.put(stufa_req)
         requestLock.release()
