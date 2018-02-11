@@ -4,6 +4,7 @@ import threading
 import queue
 import time
 import logging
+import token
 import paho.mqtt.publish as publish
 import datetime
 import matplotlib
@@ -254,9 +255,6 @@ class TelegramBarsanti:
 
 
 def main():
-    token = '530995039:AAH7PjTEcj1TqAvlv9l0SnabGHDWkBse_pU'
-    token = '536915810:AAEL3tVvT2l7NDizIb6F0iDOdRAyRjLVXfY'
-    token = '530485863:AAFx_9isCpFYndgkAWRBGP_kU0JtzJ9Emmk'
 
     to_mqtt_Queue = queue.Queue(10)
     mqtt_thr = mqtt_thread(to_mqtt_Queue, queue_to_telegram)
