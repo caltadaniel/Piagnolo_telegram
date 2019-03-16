@@ -264,7 +264,7 @@ class TelegramBarsanti:
     def generic_msg(self,bot, update):
         #bot.send_message(chat_id=update.message.chat_id, text=update.message.text)
         if update.message.text == "Sala on":
-            self.setpoint(bot,update)
+            self.turn_on_heater(bot,update)
         elif update.message.text == "Sala off":
             self.turn_off_heater(bot,update)
         elif update.message.text == "Reset sala":
