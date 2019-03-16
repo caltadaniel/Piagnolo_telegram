@@ -97,12 +97,28 @@ class telegram_thread(threading.Thread):
                         self.actual_setpoint = self.default
                         self.heater_enabled = False
                         publish.single("home/sala/rele1", "0", hostname=hostname, port=1883)
+                if next_req.name == "home/camera/stufa":
+                    if float(next_req.args[0]) > 15 and float(next_req.args[0]) < 24:
+                        self.actual_setpoint = float(next_req.args[0])
+                        self.heater_enabled = True
+                        publish.single("home/camera/rele1", "1", hostname=hostname, port=1883)
+                    else:
+                        self.actual_setpoint = self.default
+                        self.heater_enabled = False
+                        publish.single("home/camera/rele1", "0", hostname=hostname, port=1883)
                 if next_req.name == "home/sala/stufa_reset":
                     prog_log.debug('Replying to heater reset request to {}'.format(next_req.chat_id))
                     publish.single("home/sala/rele2", "1", hostname=hostname, port=1883)
                     prog_log.debug('reset command 1')
                     time.sleep(1)
                     publish.single("home/sala/rele2", "0", hostname=hostname, port=1883)
+                    prog_log.debug('reset command 0')
+                if next_req.name == "home/camera/stufa_reset":
+                    prog_log.debug('Replying to heater reset request to {}'.format(next_req.chat_id))
+                    publish.single("home/camera/rele2", "1", hostname=hostname, port=1883)
+                    prog_log.debug('reset command 1')
+                    time.sleep(1)
+                    publish.single("home/camera/rele2", "0", hostname=hostname, port=1883)
                     prog_log.debug('reset command 0')
                 if next_req.name == "home/sala/grafico":
                     fig,ax1 = plt.subplots()
@@ -253,6 +269,30 @@ class TelegramBarsanti:
         request_queue.put(stufa_req)
         requestLock.release()
 
+    def turn_on_heater_camera(self, bot, update):
+        prog_log.debug("Stufa camera ON")
+        update.message.reply_text('Accensione stufa camera')
+        stufa_req = Request("home/camera/stufa", bot, update.message.chat.id, ["23.0"])
+        requestLock.acquire()
+        request_queue.put(stufa_req)
+        requestLock.release()
+
+    def turn_off_heater_camera(self, bot, update):
+        prog_log.debug("Stufa camera OFF")
+        update.message.reply_text('Spegnimento stufa camera')
+        stufa_req = Request("home/camera/stufa", bot, update.message.chat.id, ["0.0"])
+        requestLock.acquire()
+        request_queue.put(stufa_req)
+        requestLock.release()
+
+    def reset_camera(self, bot, update):
+        prog_log.debug("Coamdo reset camera")
+        update.message.reply_text('Reset stufa camera')
+        stufa_req = Request("home/camera/stufa_reset", bot, update.message.chat.id, [])
+        requestLock.acquire()
+        request_queue.put(stufa_req)
+        requestLock.release()
+
 
     def help(self, bot, update):
         helpString = 'Benvenuto nel centro di controllo della casa.\n ' \
@@ -269,6 +309,12 @@ class TelegramBarsanti:
             self.turn_off_heater(bot,update)
         elif update.message.text == "Reset sala":
             self.reset_sala(bot,update)
+        if update.message.text == "Camera on":
+            self.turn_on_heater_camera(bot,update)
+        elif update.message.text == "Camera off":
+            self.turn_off_heater_camera(bot,update)
+        elif update.message.text == "Reset camera":
+            self.reset_camera(bot,update)
         elif update.message.text == "Grafico sala":
             self.plot(bot,update)
         elif update.message.text == "Temperatura sala":
