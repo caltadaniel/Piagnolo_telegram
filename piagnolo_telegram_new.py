@@ -229,7 +229,7 @@ class TelegramBarsanti:
         # self.bot.send_message(chat_id=self.chat_id, text="Trying to measure the actual temperature")
         prog_log.debug('Received plot request from telegram')
 
-    def turn_on_heater(self, bot, update, val):
+    def turn_on_heater(self, bot, update):
         prog_log.debug("Stufa ON")
         update.message.reply_text('Accensione stufa sala')
         stufa_req = Request("home/sala/stufa", bot, update.message.chat.id, ["23.0"])
@@ -247,7 +247,7 @@ class TelegramBarsanti:
 
     def reset_sala(self, bot, update):
         prog_log.debug("Coamdo reset sala")
-        update.message.reply_text('Spegnimento stufa sala')
+        update.message.reply_text('Reset stufa sala')
         stufa_req = Request("home/sala/stufa_reset", bot, update.message.chat.id, [])
         requestLock.acquire()
         request_queue.put(stufa_req)
